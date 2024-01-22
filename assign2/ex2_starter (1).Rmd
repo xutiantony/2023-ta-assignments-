@@ -296,14 +296,22 @@ applications_test <- applications_test %>%
          Quarter = as.numeric(sub(".*/", "", quarter))) %>%  # Extract quarter
   mutate(SequentialQuarter = (Year - 2000) * 4 + Quarter - 1)
 
-applications_test<-applications_test%>%select(-quarter,-Year,-Quarter)
+applications_test<-applications_test%>%select(-quarter,-Year,-Quarter,-examiner_art_unit_num)
 ```
 
 ```{r}
 library(gtsummary)
 
-# Step 1: Linear Regression Model
-# Assuming 'separation_indicator' is the response variable, and all other columns are predictors
+data_minority <- applications_test %>% filter(au_move_indicator == 1)
+data_majority <- applications_test %>% filter(au_move_indicator == 0)
+
+# Upsample minority class
+data_minority_upsampled <- data_minority %>% 
+  slice_sample(replace = TRUE, n = nrow(data_majority))
+
+# Combine the upsampled minority class with the majority class
+data_balanced <- bind_rows(data_minority_upsampled, data_majority)
+
 model <- lm(au_move_indicator ~ ., data = na.omit(applications_test))
 
 # Step 2: Descriptive Tables using gtsummary
